@@ -69,10 +69,15 @@ IMAGE_WIDTH = 2048
 NETWORK_INPUTSHAPE = [1, 3, IMAGE_HEIGHT, IMAGE_WIDTH]  # input shape of your network
 CALIBRATION_BATCHSIZE = 1  # batchsize of calibration dataset
 EXECUTING_DEVICE = 'cuda'  # 'cuda' or 'cpu'.
+
+# control execute tasks
+
 REQUIRE_ANALYSE = True
 DUMP_RESULT = False
 TORCH2ONNX = False
 TEST_TRT_FP32 = False
+TEST_EXECUTOER_PPQ = False
+TEST_PPQ_TRT_INT8 = False
 
 # torch2onnx
 if TORCH2ONNX:
@@ -112,6 +117,7 @@ calib_dataloader = build_mmseg_dataloader(MODEL_CFG_PATH, 'train', calib_txt)
 collate_fn = lambda x: x.to(EXECUTING_DEVICE)
 ONNX_MODEL_FILE = os.path.join(WORKING_DIRECTORY, 'end2end.onnx')
 PPQ_ONNX_INT8_FILE = os.path.join(WORKING_DIRECTORY, 'ppq-int8.onnx')
+PPQ_ONNX_INT8_CONFIG = os.path.join(WORKING_DIRECTORY, 'ppq-int8.json')
 PPQ_TRT_INT8_FILE = os.path.join(WORKING_DIRECTORY, 'ppq-int8.engine')
 # ENABLE CUDA KERNEL 会加速量化效率 3x ~ 10x，但是你如果没有装相应编译环境的话是编译不了的
 # 你可以尝试安装编译环境，或者在不启动 CUDA KERNEL 的情况下完成量化：移除 with ENABLE_CUDA_KERNEL(): 即可
@@ -127,11 +133,12 @@ with ENABLE_CUDA_KERNEL():
     # 请注意，必须在 export 之前执行此操作。
     # -------------------------------------------------------------------
     executor = TorchExecutor(graph=quantized, device=EXECUTING_DEVICE)
-    val_dataloader = build_mmseg_dataloader(MODEL_CFG_PATH, 'val')
-    json_file = osp.join(WORKING_DIRECTORY, 'ppq_executor_val.json')
-    print(100 * '--')
-    print('evaluate val dataset')
-    evaluate_model(executor, val_dataloader, json_file)
+    if TEST_EXECUTOER_PPQ:
+        val_dataloader = build_mmseg_dataloader(MODEL_CFG_PATH, 'val')
+        json_file = osp.join(WORKING_DIRECTORY, 'ppq_executor_val.json')
+        print(100 * '--')
+        print('evaluate val dataset')
+        evaluate_model(executor, val_dataloader, json_file)
 
     # -------------------------------------------------------------------
     # PPQ 计算量化误差时，使用信噪比的倒数作为指标，即噪声能量 / 信号能量
@@ -169,9 +176,9 @@ with ENABLE_CUDA_KERNEL():
     print('网络量化结束，正在生成目标文件:')
     export_ppq_graph(
         graph=quantized, platform=TARGET_PLATFORM,
-        graph_save_to=PPQ_ONNX_INT8_FILE)
+        graph_save_to=PPQ_ONNX_INT8_FILE.split('.')[0],
+        config_save_to=PPQ_ONNX_INT8_CONFIG)
 
-TEST_PPQ_TRT_INT8 = True
 if TEST_PPQ_TRT_INT8:
     MODEL_CFG_PATH_INT8 = osp.join(MMDEPLOY_DIR, 'configs/mmseg/segmentation_tensorrt-int8_static-1024x2048.py')
 
