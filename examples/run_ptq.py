@@ -124,6 +124,7 @@ PPQ_TRT_INT8_FILE = os.path.join(WORKING_DIRECTORY, 'ppq-int8.engine')
 
 # test trt int8 of original trt
 if TEST_TRT_INT8:
+    print('test original trt int8')
     # create calib file
     h5_calibe_file = osp.join(WORKING_DIRECTORY, calib_txt.split('/')[-1].replace('.txt', '.hpy'))
     if not osp.exists(h5_calibe_file):
@@ -137,6 +138,7 @@ if TEST_TRT_INT8:
                  ]
     log_path = osp.join(WORKING_DIRECTORY, 'original_onnx2tensorrt-int8.log')
     run_cmd(cmd_lines, log_path)
+
     cmd_lines = ['python', osp.join(MMDEPLOY_DIR, 'tools/test.py'),
                  MODEL_CFG_PATH_INT8,
                  MODEL_CFG_PATH,
