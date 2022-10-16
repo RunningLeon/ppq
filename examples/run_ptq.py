@@ -8,7 +8,7 @@ CURRENT_DIR = osp.dirname(__file__)
 sys.path.insert(0, CURRENT_DIR)
 from dataset import build_mmseg_dataloader, evaluate_model
 from qs_config import QS, TARGET_PLATFORM
-from create_clib import create_calib_input_data
+from create_calib import create_calib_input_data
 
 from ppq.api import ENABLE_CUDA_KERNEL, export_ppq_graph, TorchExecutor, quantize_onnx_model, ppq_warning, TargetPlatform, quantize_native_model, load_onnx_graph
 from ppq.quantization.analyse import parameter_analyse, variable_analyse, layerwise_error_analyse, statistical_analyse, graphwise_error_analyse
