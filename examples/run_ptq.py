@@ -80,6 +80,7 @@ TEST_TRT_FP32 = False
 TEST_EXECUTOER_PPQ = False
 TEST_PPQ_TRT_INT8 = True
 TEST_TRT_INT8 = False
+DO_QUANT_WITH_PPQ = True
 
 # torch2onnx
 if TORCH2ONNX:
@@ -150,78 +151,79 @@ if TEST_TRT_INT8:
     run_cmd(cmd_lines, log_path)
 
 torch.cuda.empty_cache()
-# ENABLE CUDA KERNEL 会加速量化效率 3x ~ 10x，但是你如果没有装相应编译环境的话是编译不了的
-# 你可以尝试安装编译环境，或者在不启动 CUDA KERNEL 的情况下完成量化：移除 with ENABLE_CUDA_KERNEL(): 即可
-with ENABLE_CUDA_KERNEL():
-    graph = load_onnx_graph(onnx_import_file=ONNX_MODEL_FILE)
-    print('网络正量化中，根据你的量化配置，这将需要一段时间:')
-    quantized = quantize_native_model(
-        setting=QS,                     # setting 对象用来控制标准量化逻辑
-        model=graph,
-        calib_dataloader=calib_dataloader,
-        calib_steps=32,
-        input_shape=NETWORK_INPUTSHAPE, # 如果你的网络只有一个输入，使用这个参数传参
-        inputs=None,                    # 如果你的网络有多个输入，使用这个参数传参，就是 input_shape=None, inputs=[torch.zeros(1,3,224,224), torch.zeros(1,3,224,224)]
-        collate_fn=collate_fn,  # collate_fn 跟 torch dataloader 的 collate fn 是一样的，用于数据预处理，
-                                                      # 你当然也可以用 torch dataloader 的那个，然后设置这个为 None
-        platform=TARGET_PLATFORM,
-        device=EXECUTING_DEVICE,
-        do_quantize=True)
-    # -------------------------------------------------------------------
-    # 如果你需要执行量化后的神经网络并得到结果，则需要创建一个 executor
-    # 这个 executor 的行为和 torch.Module 是类似的，你可以利用这个东西来获取执行结果
-    # 请注意，必须在 export 之前执行此操作。
-    # -------------------------------------------------------------------
-    executor = TorchExecutor(graph=quantized, device=EXECUTING_DEVICE)
-    if TEST_EXECUTOER_PPQ:
+if DO_QUANT_WITH_PPQ:
+    # ENABLE CUDA KERNEL 会加速量化效率 3x ~ 10x，但是你如果没有装相应编译环境的话是编译不了的
+    # 你可以尝试安装编译环境，或者在不启动 CUDA KERNEL 的情况下完成量化：移除 with ENABLE_CUDA_KERNEL(): 即可
+    with ENABLE_CUDA_KERNEL():
+        graph = load_onnx_graph(onnx_import_file=ONNX_MODEL_FILE)
+        print('网络正量化中，根据你的量化配置，这将需要一段时间:')
+        quantized = quantize_native_model(
+            setting=QS,                     # setting 对象用来控制标准量化逻辑
+            model=graph,
+            calib_dataloader=calib_dataloader,
+            calib_steps=32,
+            input_shape=NETWORK_INPUTSHAPE, # 如果你的网络只有一个输入，使用这个参数传参
+            inputs=None,                    # 如果你的网络有多个输入，使用这个参数传参，就是 input_shape=None, inputs=[torch.zeros(1,3,224,224), torch.zeros(1,3,224,224)]
+            collate_fn=collate_fn,  # collate_fn 跟 torch dataloader 的 collate fn 是一样的，用于数据预处理，
+                                                          # 你当然也可以用 torch dataloader 的那个，然后设置这个为 None
+            platform=TARGET_PLATFORM,
+            device=EXECUTING_DEVICE,
+            do_quantize=True)
+        # -------------------------------------------------------------------
+        # 如果你需要执行量化后的神经网络并得到结果，则需要创建一个 executor
+        # 这个 executor 的行为和 torch.Module 是类似的，你可以利用这个东西来获取执行结果
+        # 请注意，必须在 export 之前执行此操作。
+        # -------------------------------------------------------------------
+        executor = TorchExecutor(graph=quantized, device=EXECUTING_DEVICE)
+        if TEST_EXECUTOER_PPQ:
 
-        val_dataloader = build_mmseg_dataloader(MODEL_CFG_PATH, 'val')
-        json_file = osp.join(WORKING_DIRECTORY, 'ppq_executor_val.json')
-        print(100 * '--')
-        print('evaluate val dataset')
-        evaluate_model(executor, val_dataloader, json_file)
+            val_dataloader = build_mmseg_dataloader(MODEL_CFG_PATH, 'val')
+            json_file = osp.join(WORKING_DIRECTORY, 'ppq_executor_val.json')
+            print(100 * '--')
+            print('evaluate val dataset')
+            evaluate_model(executor, val_dataloader, json_file)
 
-    # -------------------------------------------------------------------
-    # PPQ 计算量化误差时，使用信噪比的倒数作为指标，即噪声能量 / 信号能量
-    # 量化误差 0.1 表示在整体信号中，量化噪声的能量约为 10%
-    # 你应当注意，在 graphwise_error_analyse 分析中，我们衡量的是累计误差
-    # 网络的最后一层往往都具有较大的累计误差，这些误差是其前面的所有层所共同造成的
-    # 你需要使用 layerwise_error_analyse 逐层分析误差的来源
-    # -------------------------------------------------------------------
-    print('正计算网络量化误差(SNR)，最后一层的误差应小于 0.1 以保证量化精度:')
-    reports = graphwise_error_analyse(
-        graph=quantized, running_device=EXECUTING_DEVICE, steps=32,
-        dataloader=calib_dataloader, collate_fn=collate_fn)
-    for op, snr in reports.items():
-        if snr > 0.1: ppq_warning(f'层 {op} 的累计量化误差显著，请考虑进行优化')
+        # -------------------------------------------------------------------
+        # PPQ 计算量化误差时，使用信噪比的倒数作为指标，即噪声能量 / 信号能量
+        # 量化误差 0.1 表示在整体信号中，量化噪声的能量约为 10%
+        # 你应当注意，在 graphwise_error_analyse 分析中，我们衡量的是累计误差
+        # 网络的最后一层往往都具有较大的累计误差，这些误差是其前面的所有层所共同造成的
+        # 你需要使用 layerwise_error_analyse 逐层分析误差的来源
+        # -------------------------------------------------------------------
+        print('正计算网络量化误差(SNR)，最后一层的误差应小于 0.1 以保证量化精度:')
+        reports = graphwise_error_analyse(
+            graph=quantized, running_device=EXECUTING_DEVICE, steps=32,
+            dataloader=calib_dataloader, collate_fn=collate_fn)
+        for op, snr in reports.items():
+            if snr > 0.1: ppq_warning(f'层 {op} 的累计量化误差显著，请考虑进行优化')
 
-    if REQUIRE_ANALYSE:
-        print('正计算逐层量化误差(SNR)，每一层的独立量化误差应小于 0.1 以保证量化精度:')
-        layerwise_error_analyse(graph=quantized, running_device=EXECUTING_DEVICE,
-                                interested_outputs=None,
-                                dataloader=calib_dataloader, collate_fn=collate_fn)
-    print('--- parameter_analyse')
-    # parameter_analyse(graph=quantized)
-    # print('--- variable_analyse')
-    # variable_analyse(quantized,
-    #     dataloader=calibration_dataloader,
-    #     interested_outputs=[],
-    #     collate_fn=collate_fn,
-    #     running_device = DEVICE,
-    #     samples_per_step = 65536,
-    #     steps = 8,
-    #     dequantize = False)
-    # records = statistical_analyse(
-    #     quantized, running_device=EXECUTING_DEVICE,
-    #     dataloader=calib_dataloader, collate_fn=collate_fn, steps= 8)
-    print('网络量化结束，正在生成目标文件:')
-    export_ppq_graph(
-        graph=quantized, platform=TARGET_PLATFORM,
-        graph_save_to=PPQ_ONNX_INT8_FILE,
-        config_save_to=PPQ_ONNX_INT8_CONFIG)
+        if REQUIRE_ANALYSE:
+            print('正计算逐层量化误差(SNR)，每一层的独立量化误差应小于 0.1 以保证量化精度:')
+            layerwise_error_analyse(graph=quantized, running_device=EXECUTING_DEVICE,
+                                    interested_outputs=None,
+                                    dataloader=calib_dataloader, collate_fn=collate_fn)
+        print('--- parameter_analyse')
+        # parameter_analyse(graph=quantized)
+        # print('--- variable_analyse')
+        # variable_analyse(quantized,
+        #     dataloader=calibration_dataloader,
+        #     interested_outputs=[],
+        #     collate_fn=collate_fn,
+        #     running_device = DEVICE,
+        #     samples_per_step = 65536,
+        #     steps = 8,
+        #     dequantize = False)
+        # records = statistical_analyse(
+        #     quantized, running_device=EXECUTING_DEVICE,
+        #     dataloader=calib_dataloader, collate_fn=collate_fn, steps= 8)
+        print('网络量化结束，正在生成目标文件:')
+        export_ppq_graph(
+            graph=quantized, platform=TARGET_PLATFORM,
+            graph_save_to=PPQ_ONNX_INT8_FILE,
+            config_save_to=PPQ_ONNX_INT8_CONFIG)
 
 if TEST_PPQ_TRT_INT8:
-    torch.cuda.empy_cache()
+    torch.cuda.empty_cache()
     # cmd_lines = ['python', osp.join(MMDEPLOY_DIR, 'tools/onnx2tensorrt.py'),
     #              DEPLOY_CFG_PATH,
     #              PPQ_ONNX_INT8_FILE,
