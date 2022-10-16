@@ -126,7 +126,7 @@ PPQ_TRT_INT8_FILE = os.path.join(WORKING_DIRECTORY, 'ppq-int8.engine')
 if TEST_TRT_INT8:
     print('test original trt int8')
     # create calib file
-    h5_calibe_file = osp.join(WORKING_DIRECTORY, calib_txt.split('/')[-1].replace('.txt', '.hpy'))
+    h5_calibe_file = osp.join(WORKING_DIRECTORY, calib_txt.split('/')[-1].replace('.txt', '.hdf5'))
     if not osp.exists(h5_calibe_file):
         create_calib_input_data(h5_calibe_file, calib_dataloader)
     trt_int8_engine = osp.join(WORKING_DIRECTORY, 'end2end-int8.engine')
