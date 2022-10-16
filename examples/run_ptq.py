@@ -2,7 +2,7 @@ import sys
 import os
 import os.path as osp
 import subprocess
-import mmcv
+import torch
 
 CURRENT_DIR = osp.dirname(__file__)
 sys.path.insert(0, CURRENT_DIR)
@@ -57,7 +57,7 @@ ROOT_DIR = '../work-dir'
 MMDEPLOY_DIR = '../mmdeploy'
 MMSEG_DIR = '../mmsegmentation'
 DEPLOY_CFG_PATH = osp.join(MMDEPLOY_DIR, 'configs/mmseg/segmentation_tensorrt_static-1024x2048.py')
-MODEL_CFG_PATH_INT8 = osp.join(MMDEPLOY_DIR, 'configs/mmseg/segmentation_tensorrt-int8_static-1024x2048.py')
+DEPLOY_CFG_PATH_INT8 = osp.join(MMDEPLOY_DIR, 'configs/mmseg/segmentation_tensorrt-int8_static-1024x2048.py')
 MODEL_CFG_PATH = osp.join(MMSEG_DIR, 'configs/pspnet/pspnet_r50-d8_512x1024_40k_cityscapes.py')
 PYTORCH_CHECKPOINT = '../mmdeploy_checkpoints/mmseg/pspnet/pspnet_r50-d8_512x1024_40k_cityscapes_20200605_003338-2966598c.pth'
 TEST_IMAGE = osp.join(MMSEG_DIR, 'demo/demo.png')
@@ -131,7 +131,7 @@ if TEST_TRT_INT8:
         create_calib_input_data(h5_calibe_file, calib_dataloader)
     trt_int8_engine = osp.join(WORKING_DIRECTORY, 'end2end-int8.engine')
     cmd_lines = ['python', osp.join(MMDEPLOY_DIR, 'tools/onnx2tensorrt.py'),
-                 MODEL_CFG_PATH_INT8,
+                 DEPLOY_CFG_PATH_INT8,
                  ONNX_MODEL_FILE,
                  osp.splitext(trt_int8_engine)[0],
                  f'--calib-file {h5_calibe_file}'
@@ -140,7 +140,7 @@ if TEST_TRT_INT8:
     run_cmd(cmd_lines, log_path)
 
     cmd_lines = ['python', osp.join(MMDEPLOY_DIR, 'tools/test.py'),
-                 MODEL_CFG_PATH_INT8,
+                 DEPLOY_CFG_PATH_INT8,
                  MODEL_CFG_PATH,
                  '--device cuda:0',
                  f'--model {trt_int8_engine}',
@@ -149,7 +149,7 @@ if TEST_TRT_INT8:
     log_path = osp.join(WORKING_DIRECTORY, 'test_trt_int8.log')
     run_cmd(cmd_lines, log_path)
 
-create_calib_input_data
+torch.cuda.empy_cache()
 # ENABLE CUDA KERNEL 会加速量化效率 3x ~ 10x，但是你如果没有装相应编译环境的话是编译不了的
 # 你可以尝试安装编译环境，或者在不启动 CUDA KERNEL 的情况下完成量化：移除 with ENABLE_CUDA_KERNEL(): 即可
 with ENABLE_CUDA_KERNEL():
@@ -174,6 +174,7 @@ with ENABLE_CUDA_KERNEL():
     # -------------------------------------------------------------------
     executor = TorchExecutor(graph=quantized, device=EXECUTING_DEVICE)
     if TEST_EXECUTOER_PPQ:
+
         val_dataloader = build_mmseg_dataloader(MODEL_CFG_PATH, 'val')
         json_file = osp.join(WORKING_DIRECTORY, 'ppq_executor_val.json')
         print(100 * '--')
@@ -220,8 +221,7 @@ with ENABLE_CUDA_KERNEL():
         config_save_to=PPQ_ONNX_INT8_CONFIG)
 
 if TEST_PPQ_TRT_INT8:
-
-
+    torch.cuda.empy_cache()
     # cmd_lines = ['python', osp.join(MMDEPLOY_DIR, 'tools/onnx2tensorrt.py'),
     #              DEPLOY_CFG_PATH,
     #              PPQ_ONNX_INT8_FILE,
@@ -239,7 +239,7 @@ if TEST_PPQ_TRT_INT8:
     run_cmd(cmd_lines, log_path)
 
     cmd_lines = ['python', osp.join(MMDEPLOY_DIR, 'tools/test.py'),
-                 MODEL_CFG_PATH_INT8,
+                 DEPLOY_CFG_PATH_INT8,
                  MODEL_CFG_PATH,
                  '--device cuda:0',
                  f'--model {PPQ_TRT_INT8_FILE}',
