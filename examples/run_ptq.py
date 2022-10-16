@@ -149,7 +149,7 @@ if TEST_TRT_INT8:
     log_path = osp.join(WORKING_DIRECTORY, 'test_trt_int8.log')
     run_cmd(cmd_lines, log_path)
 
-torch.cuda.empy_cache()
+torch.cuda.empty_cache()
 # ENABLE CUDA KERNEL 会加速量化效率 3x ~ 10x，但是你如果没有装相应编译环境的话是编译不了的
 # 你可以尝试安装编译环境，或者在不启动 CUDA KERNEL 的情况下完成量化：移除 with ENABLE_CUDA_KERNEL(): 即可
 with ENABLE_CUDA_KERNEL():
