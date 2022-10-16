@@ -3,7 +3,7 @@ from ppq.api import QuantizationSettingFactory,TargetPlatform, NetworkFramework
 # modify configuration below:
 TARGET_PLATFORM = TargetPlatform.TRT_INT8
 MODEL_TYPE = NetworkFramework.ONNX
-TRAINING_YOUR_NETWORK = False
+TRAINING_YOUR_NETWORK = True
 
 # -------------------------------------------------------------------
 # SETTING 对象用于控制 PPQ 的量化逻辑，主要描述了图融合逻辑、调度方案、量化细节策略等

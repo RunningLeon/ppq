@@ -35,7 +35,7 @@ class TensorrtExporter(GraphExporter):
                 trt_range_output = output_cfg.scale.item() * (output_cfg.quant_max - output_cfg.quant_min) / 2
                 act_quant_info[op.outputs[0].name] = trt_range_input
 
-            else:
+            elif isinstance(op, QuantableOperation):
                 output_cfg = op.config.output_quantization_config[0]
                 trt_range_output = output_cfg.scale.item() * (output_cfg.quant_max - output_cfg.quant_min) / 2
                 act_quant_info[op.outputs[0].name] = trt_range_output
