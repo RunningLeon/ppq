@@ -10,7 +10,7 @@ from dataset import build_mmseg_dataloader, evaluate_model
 from qs_config import QS, TARGET_PLATFORM
 
 
-from ppq.api import ENABLE_CUDA_KERNEL, export_ppq_graph, TorchExecutor, quantize_onnx_model, ppq_warning, TargetPlatform
+from ppq.api import ENABLE_CUDA_KERNEL, export_ppq_graph, TorchExecutor, quantize_onnx_model, ppq_warning, TargetPlatform, quantize_native_model, load_onnx_graph
 from ppq.quantization.analyse import parameter_analyse, variable_analyse, layerwise_error_analyse, statistical_analyse, graphwise_error_analyse
 
 
@@ -122,11 +122,20 @@ PPQ_TRT_INT8_FILE = os.path.join(WORKING_DIRECTORY, 'ppq-int8.engine')
 # ENABLE CUDA KERNEL 会加速量化效率 3x ~ 10x，但是你如果没有装相应编译环境的话是编译不了的
 # 你可以尝试安装编译环境，或者在不启动 CUDA KERNEL 的情况下完成量化：移除 with ENABLE_CUDA_KERNEL(): 即可
 with ENABLE_CUDA_KERNEL():
+    graph = load_onnx_graph(onnx_import_file=os.path.join(WORKING_DIRECTORY, 'model.onnx'))
     print('网络正量化中，根据你的量化配置，这将需要一段时间:')
-    quantized = quantize_onnx_model(
-        onnx_import_file=ONNX_MODEL_FILE, calib_dataloader=calib_dataloader, calib_steps=32, setting=QS,
-        input_shape=NETWORK_INPUTSHAPE, collate_fn=collate_fn, device=EXECUTING_DEVICE,
-        platform=TARGET_PLATFORM, do_quantize=True)
+    quantized = quantize_native_model(
+        setting=QS,                     # setting 对象用来控制标准量化逻辑
+        model=graph,
+        calib_dataloader=calib_dataloader,
+        calib_steps=32,
+        input_shape=NETWORK_INPUTSHAPE, # 如果你的网络只有一个输入，使用这个参数传参
+        inputs=None,                    # 如果你的网络有多个输入，使用这个参数传参，就是 input_shape=None, inputs=[torch.zeros(1,3,224,224), torch.zeros(1,3,224,224)]
+        collate_fn=collate_fn,  # collate_fn 跟 torch dataloader 的 collate fn 是一样的，用于数据预处理，
+                                                      # 你当然也可以用 torch dataloader 的那个，然后设置这个为 None
+        platform=TARGET_PLATFORM,
+        device=EXECUTING_DEVICE,
+        do_quantize=True)
     # -------------------------------------------------------------------
     # 如果你需要执行量化后的神经网络并得到结果，则需要创建一个 executor
     # 这个 executor 的行为和 torch.Module 是类似的，你可以利用这个东西来获取执行结果
