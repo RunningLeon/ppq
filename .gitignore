@@ -4,6 +4,8 @@
 **/*.out
 **/*.csv
 **/*.model
+**/*.hdf5
+
 __pycache__/
 /build
 /dist
