@@ -52,7 +52,7 @@ def run_cmd(cmd_lines, log_path):
         print(f'Log message\n{content}')
     return return_code
 
-
+DATA_DIR = osp.join(CURRENT_DIR, 'data')
 ROOT_DIR = '../work-dir'
 MMDEPLOY_DIR = '../mmdeploy'
 MMSEG_DIR = '../mmsegmentation'
@@ -115,7 +115,7 @@ print(f'TARGET PLATFORM      : {TARGET_PLATFORM.name}')
 print(f'NETWORK INPUTSHAPE   : {NETWORK_INPUTSHAPE}')
 print(f'CALIBRATION BATCHSIZE: {CALIBRATION_BATCHSIZE}')
 
-calib_txt = osp.join(CURRENT_DIR, 'data/Quant32FromTrainImages.txt')
+calib_txt = osp.join(DATA_DIR, 'Quant32FromTrainImages.txt')
 calib_dataloader = build_mmseg_dataloader(MODEL_CFG_PATH, 'train', calib_txt)
 collate_fn = lambda x: x.to(EXECUTING_DEVICE)
 ONNX_MODEL_FILE = os.path.join(WORKING_DIRECTORY, 'end2end.onnx')
@@ -127,7 +127,7 @@ PPQ_TRT_INT8_FILE = os.path.join(WORKING_DIRECTORY, 'ppq-int8.engine')
 if TEST_TRT_INT8:
     print('test original trt int8')
     # create calib file
-    h5_calibe_file = osp.join(WORKING_DIRECTORY, calib_txt.split('/')[-1].replace('.txt', '.hdf5'))
+    h5_calibe_file = osp.join(DATA_DIR, calib_txt.split('/')[-1].replace('.txt', '.hdf5'))
     if not osp.exists(h5_calibe_file):
         create_calib_input_data(h5_calibe_file, calib_dataloader)
     trt_int8_engine = osp.join(WORKING_DIRECTORY, 'end2end-int8.engine')
