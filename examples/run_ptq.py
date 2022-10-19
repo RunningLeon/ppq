@@ -224,21 +224,21 @@ if DO_QUANT_WITH_PPQ:
 
 if TEST_PPQ_TRT_INT8:
     torch.cuda.empty_cache()
-    # cmd_lines = ['python', osp.join(MMDEPLOY_DIR, 'tools/onnx2tensorrt.py'),
-    #              DEPLOY_CFG_PATH,
-    #              PPQ_ONNX_INT8_FILE,
-    #              osp.splitext(PPQ_TRT_INT8_FILE)[0],
-    #              ]
-    # log_path = osp.join(WORKING_DIRECTORY, 'ppq_onnx2tensorrt.log')
-    # run_cmd(cmd_lines, log_path)
-
-    cmd_lines = ['python', 'ppq/utils/write_qparams_onnx2trt.py',
-                 f'--onnx={PPQ_ONNX_INT8_FILE}',
-                 f'--qparam_json={PPQ_ONNX_INT8_CONFIG}',
-                 f'--engine={PPQ_TRT_INT8_FILE}',
+    cmd_lines = ['python', osp.join(MMDEPLOY_DIR, 'tools/onnx2tensorrt.py'),
+                 DEPLOY_CFG_PATH,
+                 PPQ_ONNX_INT8_FILE,
+                 osp.splitext(PPQ_TRT_INT8_FILE)[0],
                  ]
     log_path = osp.join(WORKING_DIRECTORY, 'ppq_onnx2tensorrt.log')
     run_cmd(cmd_lines, log_path)
+
+    # cmd_lines = ['python', 'ppq/utils/write_qparams_onnx2trt.py',
+    #              f'--onnx={PPQ_ONNX_INT8_FILE}',
+    #              f'--qparam_json={PPQ_ONNX_INT8_CONFIG}',
+    #              f'--engine={PPQ_TRT_INT8_FILE}',
+    #              ]
+    # log_path = osp.join(WORKING_DIRECTORY, 'ppq_onnx2tensorrt.log')
+    # run_cmd(cmd_lines, log_path)
 
     cmd_lines = ['python', osp.join(MMDEPLOY_DIR, 'tools/test.py'),
                  DEPLOY_CFG_PATH_INT8,
