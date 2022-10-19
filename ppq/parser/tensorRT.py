@@ -180,7 +180,8 @@ class TensorRTExporter(ONNXRUNTIMExporter):
                config_path: str = None, input_shapes: Dict[str, list] = None) -> None:
         # step 1, export onnx file.
         super().export(file_path=file_path, graph=graph, config_path=None)
-
+        # do not create engine in here.
+        return
         # step 2, convert onnx file to tensorRT engine.
         try:
             import tensorrt as trt

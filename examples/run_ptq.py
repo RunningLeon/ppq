@@ -232,6 +232,7 @@ if TEST_PPQ_TRT_INT8:
     log_path = osp.join(WORKING_DIRECTORY, 'ppq_onnx2tensorrt.log')
     run_cmd(cmd_lines, log_path)
 
+    # this has bug
     # cmd_lines = ['python', 'ppq/utils/write_qparams_onnx2trt.py',
     #              f'--onnx={PPQ_ONNX_INT8_FILE}',
     #              f'--qparam_json={PPQ_ONNX_INT8_CONFIG}',
