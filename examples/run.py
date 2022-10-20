@@ -9,8 +9,9 @@ from easydict import EasyDict as edict
 from src import (build_mmseg_dataloader, evaluate_model,
                  parse_quantization_config, print_quant_settings, run_cmd)
 
-from ppq.api import (ENABLE_CUDA_KERNEL, TorchExecutor, export_ppq_graph,
-                     load_onnx_graph, ppq_warning, quantize_native_model)
+from ppq.api import (ENABLE_CUDA_KERNEL, TargetPlatform, TorchExecutor,
+                     export_ppq_graph, load_onnx_graph, ppq_warning,
+                     quantize_native_model)
 from ppq.quantization.analyse import (graphwise_error_analyse,
                                       layerwise_error_analyse,
                                       parameter_analyse, statistical_analyse,
@@ -38,7 +39,7 @@ def main():
     PPQ_TRT_INT8_FILE = os.path.join(WORKING_DIRECTORY, 'ppq-int8.engine')
 
     DEPLOY_CFG_PATH = osp.join(config.mmdeploy_dir, config.model.deploy_cfg)
-    DEPLOY_CFG_PATH_INT8 = osp.join(config.mdeploy_dir,
+    DEPLOY_CFG_PATH_INT8 = osp.join(config.mmdeploy_dir,
                                     config.model.deploy_cfg_int8)
     MODEL_CFG_PATH = osp.join(config.mmseg_dir, config.model.model_cfg)
 
@@ -46,9 +47,10 @@ def main():
         config.calib.batch_size, 3, config.calib.input_height,
         config.calib.input_width
     ]
+    print(TargetPlatform)
     TARGET_PLATFORM = eval(config.calib.target_platform)
-    collate_fn = lambda x: x.to(config.device)  # noqa: E731
-    calib_dataloader = build_mmseg_dataloader(config.model.model_cfg, 'train',
+    collate_fn = lambda x: x.to(config.calib.device)  # noqa: E731
+    calib_dataloader = build_mmseg_dataloader(MODEL_CFG_PATH, 'train',
                                               config.calib.calibration_file)
 
     with ENABLE_CUDA_KERNEL():
