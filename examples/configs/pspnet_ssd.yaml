@@ -1,0 +1,55 @@
+mmdeploy_dir: ../mmdeploy
+mmseg_dir: ../mmsegmentation
+
+quant_settings:
+  ssd_equalization: True
+  # ssd_setting: SSDEqualizationSetting()
+  # Equalization 优化级别，目前只支持level 1，对应 Conv--Relu--Conv 和 Conv--Conv 的拉平
+  # optimization level, only support level 1 for now
+  # you shouldn't modify this
+  ssd_setting.opt_level: 1
+
+  # 在计算scale的时候，所有低于 channel_ratio * max(W) 的值会被裁减到 channel_ratio * max(W)
+  # channel ratio used to calculate equalization scale
+  # all values below this ratio of the maximum value of corresponding weight
+  # will be clipped to this ratio when calculating scale
+  ssd_setting.channel_ratio: 0.5
+
+  # loss的降低阈值，优化后的loss低于 原来的loss * 降低阈值, 优化才会发生
+  # optimized loss must be below this threshold of original loss for algo to take effect
+  ssd_setting.loss_threshold: 0.8
+
+  # 是否对权重进行正则化
+  # whether to apply layer normalization to weights
+  ssd_setting.layer_norm: False
+
+  # 算法迭代次数，3次对于大部分网络足够
+  # num of iterations, 3 would be enough for most networks
+  # it takes about 10 mins for one iteration
+  ssd_setting.iteration: 3
+
+calib:
+  target_platform: TargetPlatform.TRT_INT8
+  batch_size: 1
+  input_height: 1024
+  input_width: 2048
+  device: cuda
+  calib_steps: 32
+  calibration_file: examples/data/Quant512FromTrainImages.txt
+  calibration_h5file: examples/data/h5file/Quant512FromTrainImages.hdf5
+  analysis:
+    test_executor: False
+    graphwise: True
+    layerwise: True
+    parameter: False
+    variable: False
+#    interested_outputs:
+#      -
+
+model:
+  deploy_cfg: configs/mmseg/segmentation_tensorrt_static-1024x2048.py
+  deploy_cfg_int8: configs/mmseg/segmentation_tensorrt-int8_static-1024x2048.py
+  model_cfg: configs/pspnet/pspnet_r50-d8_512x1024_40k_cityscapes.py
+  checkpoint: ../mmdeploy_checkpoints/mmseg/pspnet/pspnet_r50-d8_512x1024_40k_cityscapes_20200605_003338-2966598c.pth
+  working_dir: ../work-dir/pspnet/pspnet_r50-d8_512x1024_40k_cityscapes/ssd
+  onnx_file: ../work-dir/pspnet/pspnet_r50-d8_512x1024_40k_cityscapes/end2end.onnx
