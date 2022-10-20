@@ -2,6 +2,7 @@ import argparse
 import logging
 import os
 import os.path as osp
+import shutil
 
 import torch
 import yaml
@@ -34,6 +35,9 @@ def main():
     print_quant_settings(QS)
     WORKING_DIRECTORY = config.model.working_dir
     os.makedirs(WORKING_DIRECTORY, exist_ok=True)
+    shutil.copy(args.config,
+                osp.join(WORKING_DIRECTORY,
+                         osp.split(args.config)[1]))
     PPQ_ONNX_INT8_FILE = os.path.join(WORKING_DIRECTORY, 'ppq-int8.onnx')
     PPQ_ONNX_INT8_CONFIG = os.path.join(WORKING_DIRECTORY, 'ppq-int8.json')
     PPQ_TRT_INT8_FILE = os.path.join(WORKING_DIRECTORY, 'ppq-int8.engine')
