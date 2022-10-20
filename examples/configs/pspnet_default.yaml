@@ -1,18 +1,37 @@
+mmdeploy_dir: ../mmdeploy
+mmseg_dir: ../mmsegmentation
 
 quant_settings:
   lsq_optimization: True                                      # 启动网络再训练过程，降低量化误差
   lsq_optimization_setting.steps: 500                         # 再训练步数，影响训练时间，500 步大概几分钟
   lsq_optimization_setting.collecting_device: cpu             # 缓存数据放在那，cuda 就是放在gpu，如果显存超了你就换成 'cpu'
 
-data:
+calib:
+  target_platform: TargetPlatform.TRT_INT8
+  batch_size: 1
+  input_height: 1024
+  input_width: 2048
+  device: cuda
+  calib_steps: 32
   calibration_file: examples/data/Quant32FromTrainImages.txt
-  working_dir
+  calibration_h5file: examples/data/h5file/Quant32FromTrainImages.hdf5
+  analysis:
+    test_executor: False
+    graphwise: True
+    layerwise: True
+    parameter: False
+    variable: False
+#    interested_outputs:
+#      -
 
 model:
-  deploy_cfg:
-  deploy_cfg_int8:
-  model_cfg:
-  checkpoint:
+  deploy_cfg: configs/mmseg/segmentation_tensorrt_static-1024x2048.py
+  deploy_cfg_int8: configs/mmseg/segmentation_tensorrt-int8_static-1024x2048.py
+  model_cfg: configs/pspnet/pspnet_r50-d8_512x1024_40k_cityscapes.py
+  checkpoint: ../mmdeploy_checkpoints/mmseg/pspnet/pspnet_r50-d8_512x1024_40k_cityscapes_20200605_003338-2966598c.pth
+  working_dir: ../work-dir/pspnet/pspnet_r50-d8_512x1024_40k_cityscapes
+  onnx_file: ../work-dir/pspnet/pspnet_r50-d8_512x1024_40k_cityscapes/end2end.onnx
+
 
 pipeline:
   - torch2onnx:
@@ -25,6 +44,3 @@ pipeline:
       p:p
   - test_ppq_int8:
       p:p
-
-
-

@@ -1,9 +1,9 @@
-from mmseg.datasets import CityscapesDataset, DATASETS
-from mmcv.utils import print_log
-from mmseg.utils import get_root_logger
 import mmcv
 from mmcv.parallel import DataContainer
-from mmseg.datasets import build_dataloader, build_dataset
+from mmcv.utils import print_log
+from mmseg.datasets import (DATASETS, CityscapesDataset, build_dataloader,
+                            build_dataset)
+from mmseg.utils import get_root_logger
 
 
 @DATASETS.register_module()
@@ -19,8 +19,10 @@ class CustomCityscapesDataset(CityscapesDataset):
                  seg_map_suffix='_gtFine_labelTrainIds.png',
                  calib_txt=None,
                  **kwargs):
-        super(CustomCityscapesDataset, self).__init__(
-            img_suffix=img_suffix, seg_map_suffix=seg_map_suffix, **kwargs)
+        super(CustomCityscapesDataset,
+              self).__init__(img_suffix=img_suffix,
+                             seg_map_suffix=seg_map_suffix,
+                             **kwargs)
         self.calib_txt = calib_txt
         self.update_img_infos()
 
@@ -31,8 +33,12 @@ class CustomCityscapesDataset(CityscapesDataset):
                 for line in f:
                     filename = line.strip().split('train/')[1]
                     calib_file_names.add(filename)
-            self.img_infos = [info for info in self.img_infos if info['filename'] in calib_file_names]
-            print_log(f'Loaded {len(self.img_infos)} images for calibration', logger=get_root_logger())
+            self.img_infos = [
+                info for info in self.img_infos
+                if info['filename'] in calib_file_names
+            ]
+            print_log(f'Loaded {len(self.img_infos)} images for calibration',
+                      logger=get_root_logger())
 
     def prepare_calib_img(self, idx):
         output = self.prepare_test_img(idx)
@@ -60,7 +66,11 @@ class CustomCityscapesDataset(CityscapesDataset):
             return self.prepare_train_img(idx)
 
 
-def build_mmseg_dataloader(model_cfg, data_type, calib_txt=None, img_height=512, img_width=1024):
+def build_mmseg_dataloader(model_cfg,
+                           data_type,
+                           calib_txt=None,
+                           img_height=512,
+                           img_width=1024):
     cfg = mmcv.Config.fromfile(model_cfg)
     # cfg.test_pipeline[1]['img_scale'] = (img_width, img_height)
     # cfg.test_pipeline[1]['transforms'][0]['keep_ratio'] = False
@@ -72,7 +82,10 @@ def build_mmseg_dataloader(model_cfg, data_type, calib_txt=None, img_height=512,
     dataset.type = 'CustomCityscapesDataset'
     dataset['calib_txt'] = calib_txt
     dataset = build_dataset(dataset)
-    data_loader = build_dataloader(dataset, samples_per_gpu=1, workers_per_gpu=1, shuffle=False)
+    data_loader = build_dataloader(dataset,
+                                   samples_per_gpu=1,
+                                   workers_per_gpu=1,
+                                   shuffle=False)
     return data_loader
 
 
