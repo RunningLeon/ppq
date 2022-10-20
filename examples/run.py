@@ -2,11 +2,12 @@ import argparse
 import logging
 import os
 import os.path as osp
-import sys
 
 import torch
 import yaml
 from easydict import EasyDict as edict
+from src import (build_mmseg_dataloader, evaluate_model,
+                 parse_quantization_config, print_quant_settings, run_cmd)
 
 from ppq.api import (ENABLE_CUDA_KERNEL, TorchExecutor, export_ppq_graph,
                      load_onnx_graph, ppq_warning, quantize_native_model)
@@ -14,14 +15,6 @@ from ppq.quantization.analyse import (graphwise_error_analyse,
                                       layerwise_error_analyse,
                                       parameter_analyse, statistical_analyse,
                                       variable_analyse)
-
-CURRENT_DIR = osp.dirname(__file__)
-sys.path.insert(0, CURRENT_DIR)
-from .src import build_mmseg_dataloader  # noqa: E402
-from .src import evaluate_model  # noqa: E402
-from .src import parse_quantization_config  # noqa: E402
-from .src import print_quant_settings  # noqa: E402
-from .src import run_cmd  # noqa: E402
 
 
 def parse_args():

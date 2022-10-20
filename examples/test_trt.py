@@ -4,8 +4,7 @@ import os.path as osp
 
 import yaml
 from easydict import EasyDict as edict
-
-from .src import build_mmseg_dataloader, create_calib_input_data, run_cmd
+from src import build_mmseg_dataloader, create_calib_input_data, run_cmd
 
 
 def parse_args():
