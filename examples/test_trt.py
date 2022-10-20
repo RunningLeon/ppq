@@ -24,7 +24,7 @@ def main():
     os.makedirs(WORKING_DIRECTORY, exist_ok=True)
     ONNX_MODEL_FILE = osp.join(WORKING_DIRECTORY, 'end2end.onnx')
     DEPLOY_CFG_PATH = osp.join(config.mmdeploy_dir, config.model.deploy_cfg)
-    DEPLOY_CFG_PATH_INT8 = osp.join(config.mdeploy_dir,
+    DEPLOY_CFG_INT8_PATH = osp.join(config.mmdeploy_dir,
                                     config.model.deploy_cfg_int8)
     MODEL_CFG_PATH = osp.join(config.mmseg_dir, config.model.model_cfg)
     TEST_IMAGE = osp.join(config.mmseg_dir, 'demo/demo.png')
@@ -66,7 +66,7 @@ def main():
     trt_int8_engine = osp.join(WORKING_DIRECTORY, 'end2end-int8.engine')
     cmd_lines = [
         'python',
-        osp.join(MMDEPLOY_DIR, 'tools/onnx2tensorrt.py'), DEPLOY_CFG_PATH_INT8,
+        osp.join(MMDEPLOY_DIR, 'tools/onnx2tensorrt.py'), DEPLOY_CFG_INT8_PATH,
         ONNX_MODEL_FILE,
         osp.splitext(trt_int8_engine)[0], f'--calib-file {h5_calibe_file}'
     ]
@@ -76,7 +76,7 @@ def main():
     cmd_lines = [
         'python',
         osp.join(MMDEPLOY_DIR,
-                 'tools/test.py'), DEPLOY_CFG_PATH_INT8, MODEL_CFG_PATH,
+                 'tools/test.py'), DEPLOY_CFG_INT8_PATH, MODEL_CFG_PATH,
         '--device cuda:0', f'--model {trt_int8_engine}', '--metrics mIoU'
     ]
     log_path = osp.join(WORKING_DIRECTORY, 'test_trt_int8.log')

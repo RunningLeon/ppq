@@ -38,8 +38,8 @@ def main():
     PPQ_ONNX_INT8_CONFIG = os.path.join(WORKING_DIRECTORY, 'ppq-int8.json')
     PPQ_TRT_INT8_FILE = os.path.join(WORKING_DIRECTORY, 'ppq-int8.engine')
 
-    DEPLOY_CFG_PATH = osp.join(config.mmdeploy_dir, config.model.deploy_cfg)
-    DEPLOY_CFG_PATH_INT8 = osp.join(config.mmdeploy_dir,
+    # DEPLOY_CFG_PATH = osp.join(config.mmdeploy_dir, config.model.deploy_cfg)
+    DEPLOY_CFG_INT8_PATH = osp.join(config.mmdeploy_dir,
                                     config.model.deploy_cfg_int8)
     MODEL_CFG_PATH = osp.join(config.mmseg_dir, config.model.model_cfg)
 
@@ -137,7 +137,7 @@ def main():
     cmd_lines = [
         'python',
         osp.join(config.mmdeploy_dir, 'tools/onnx2tensorrt.py'),
-        DEPLOY_CFG_PATH,
+        DEPLOY_CFG_INT8_PATH,
         PPQ_ONNX_INT8_FILE,
         osp.splitext(PPQ_TRT_INT8_FILE)[0],
     ]
@@ -147,7 +147,7 @@ def main():
     cmd_lines = [
         'python',
         osp.join(config.mmdeploy_dir,
-                 'tools/test.py'), DEPLOY_CFG_PATH_INT8, MODEL_CFG_PATH,
+                 'tools/test.py'), DEPLOY_CFG_INT8_PATH, MODEL_CFG_PATH,
         '--device cuda:0', f'--model {PPQ_TRT_INT8_FILE}', '--metrics mIoU'
     ]
     log_path = osp.join(WORKING_DIRECTORY, 'test_ppq_trt_int8.log')
