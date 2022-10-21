@@ -1,0 +1,36 @@
+mmdeploy_dir: ../mmdeploy
+mmseg_dir: ../mmsegmentation
+
+quant_settings:
+  dispatcher: pursus
+
+calib:
+  target_platform: TargetPlatform.TRT_INT8
+  batch_size: 1
+  input_height: 1024
+  input_width: 2048
+  device: cuda
+  calib_steps: 32
+  calibration_file: examples/data/Quant2FromTrainImages.txt
+  calibration_h5file: examples/data/h5file/Quant2FromTrainImages.hdf5
+  analysis:
+    test_executor: False
+    graphwise: True
+    layerwise: True
+    parameter: False
+    variable: False
+#    interested_outputs:
+#      -
+
+model:
+  deploy_cfg: configs/mmseg/segmentation_tensorrt_static-1024x2048.py
+  deploy_cfg_int8: configs/mmseg/segmentation_tensorrt-int8_static-1024x2048.py
+  model_cfg: configs/fastscnn/fast_scnn_lr0.12_8x4_160k_cityscapes.py
+  checkpoint: ../mmdeploy_checkpoints/mmseg/fastscnn/fast_scnn_lr0.12_8x4_160k_cityscapes_20210630_164853-0cec9937.pth
+  working_dir: ../work-dir/fastscnn/fast_scnn_lr0.12_8x4_160k_cityscapes/default
+  onnx_file: ../work-dir/fastscnn/fast_scnn_lr0.12_8x4_160k_cityscapes/end2end.onnx
+
+pipeline:
+  torch2onnx: False
+  test_trt_fp32: False
+  test_trt_int8: True
