@@ -5,6 +5,7 @@ quant_settings:
   dispatcher: pursus
 
 calib:
+  name: default
   target_platform: TargetPlatform.TRT_INT8
   batch_size: 1
   input_height: 1024
@@ -27,8 +28,8 @@ model:
   deploy_cfg_int8: configs/mmseg/segmentation_tensorrt-int8_static-1024x2048.py
   model_cfg: configs/fastscnn/fast_scnn_lr0.12_8x4_160k_cityscapes.py
   checkpoint: ../mmdeploy_checkpoints/mmseg/fastscnn/fast_scnn_lr0.12_8x4_160k_cityscapes_20210630_164853-0cec9937.pth
-  working_dir: ../work-dir/fastscnn/fast_scnn_lr0.12_8x4_160k_cityscapes/default
-  onnx_file: ../work-dir/fastscnn/fast_scnn_lr0.12_8x4_160k_cityscapes/end2end.onnx
+  working_dir: ../work-dir/fastscnn/fast_scnn_lr0.12_8x4_160k_cityscapes
+  onnx_file: end2end.onnx
 
 pipeline:
   torch2onnx: False

@@ -33,16 +33,19 @@ def main():
         config = edict(config)
     QS = parse_quantization_config(config.quant_settings)
     print_quant_settings(QS)
-    WORKING_DIRECTORY = config.model.working_dir
+    ONNX_MODEL_FILE = osp.join(config.model.working_dir,
+                               config.model.onnx_file)
+    assert osp.exists(ONNX_MODEL_FILE), ONNX_MODEL_FILE
+    WORKING_DIRECTORY = osp.join(config.model.working_dir, config.calib.name)
     os.makedirs(WORKING_DIRECTORY, exist_ok=True)
     shutil.copy(args.config,
                 osp.join(WORKING_DIRECTORY,
                          osp.split(args.config)[1]))
     PPQ_ONNX_INT8_FILE = os.path.join(WORKING_DIRECTORY, 'ppq-int8.onnx')
-    PPQ_ONNX_INT8_CONFIG = os.path.join(WORKING_DIRECTORY, 'ppq-int8.json')
+    PPQ_ONNX_INT8_CONFIG = os.path.join(WORKING_DIRECTORY,
+                                        'ppq-int8-config.json')
     PPQ_TRT_INT8_FILE = os.path.join(WORKING_DIRECTORY, 'ppq-int8.engine')
 
-    # DEPLOY_CFG_PATH = osp.join(config.mmdeploy_dir, config.model.deploy_cfg)
     DEPLOY_CFG_INT8_PATH = osp.join(config.mmdeploy_dir,
                                     config.model.deploy_cfg_int8)
     MODEL_CFG_PATH = osp.join(config.mmseg_dir, config.model.model_cfg)
@@ -58,7 +61,7 @@ def main():
                                               config.calib.calibration_file)
 
     with ENABLE_CUDA_KERNEL():
-        graph = load_onnx_graph(onnx_import_file=config.model.onnx_file)
+        graph = load_onnx_graph(onnx_import_file=ONNX_MODEL_FILE)
         print('网络正量化中，根据你的量化配置，这将需要一段时间:')
         quantized = quantize_native_model(
             setting=QS,  # setting 对象用来控制标准量化逻辑
@@ -148,15 +151,17 @@ def main():
     log_path = osp.join(WORKING_DIRECTORY, 'ppq_onnx2tensorrt.log')
     run_cmd(cmd_lines, log_path)
 
+    eval_json_file = osp.join(WORKING_DIRECTORY, 'eval.json')
     cmd_lines = [
         'python',
-        osp.join(config.mmdeploy_dir,
-                 'tools/test.py'), DEPLOY_CFG_INT8_PATH, MODEL_CFG_PATH,
-        '--device cuda:0', f'--model {PPQ_TRT_INT8_FILE}', '--metrics mIoU'
+        osp.join(config.mmdeploy_dir, 'tools/test.py'), DEPLOY_CFG_INT8_PATH,
+        MODEL_CFG_PATH, '--device cuda:0', f'--model {PPQ_TRT_INT8_FILE}',
+        '--metrics mIoU', f'--json-file {eval_json_file}'
     ]
     log_path = osp.join(WORKING_DIRECTORY, 'test_ppq_trt_int8.log')
-    run_cmd(cmd_lines, log_path)
-
+    ret_code = run_cmd(cmd_lines, log_path)
+    if ret_code == 0:
+        os.system(f'cat {eval_json_file}')
     logging.info(f'Saved results to {WORKING_DIRECTORY}')
 
 

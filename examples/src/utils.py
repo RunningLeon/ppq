@@ -35,7 +35,7 @@ def run_cmd(cmd_lines, log_path):
 
     if return_code != 0:
         print(f'Got shell return code={return_code}')
-    with open(log_path, 'r') as f:
-        content = f.read()
-        print(f'Log message\n{content}')
+        with open(log_path, 'r') as f:
+            content = f.read()
+            print(f'Log message\n{content}')
     return return_code

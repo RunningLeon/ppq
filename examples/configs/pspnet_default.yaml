@@ -5,6 +5,7 @@ quant_settings:
   dispatcher: pursus
 
 calib:
+  name: default
   target_platform: TargetPlatform.TRT_INT8
   batch_size: 1
   input_height: 1024
@@ -27,5 +28,10 @@ model:
   deploy_cfg_int8: configs/mmseg/segmentation_tensorrt-int8_static-1024x2048.py
   model_cfg: configs/pspnet/pspnet_r50-d8_512x1024_40k_cityscapes.py
   checkpoint: ../mmdeploy_checkpoints/mmseg/pspnet/pspnet_r50-d8_512x1024_40k_cityscapes_20200605_003338-2966598c.pth
-  working_dir: ../work-dir/pspnet/pspnet_r50-d8_512x1024_40k_cityscapes/default
-  onnx_file: ../work-dir/pspnet/pspnet_r50-d8_512x1024_40k_cityscapes/end2end.onnx
+  working_dir: ../work-dir/pspnet/pspnet_r50-d8_512x1024_40k_cityscapes
+  onnx_file: end2end.onnx
+
+pipeline:
+  torch2onnx: False
+  test_trt_fp32: False
+  test_trt_int8: True

@@ -69,13 +69,17 @@ class CustomCityscapesDataset(CityscapesDataset):
 def build_mmseg_dataloader(model_cfg,
                            data_type,
                            calib_txt=None,
-                           img_height=512,
-                           img_width=1024):
+                           batch_size=1,
+                           img_height=1024,
+                           img_width=2048,
+                           shuffle=False):
     cfg = mmcv.Config.fromfile(model_cfg)
-    # cfg.test_pipeline[1]['img_scale'] = (img_width, img_height)
-    # cfg.test_pipeline[1]['transforms'][0]['keep_ratio'] = False
-    # cfg.data.samples_per_gpu = 1
-    # cfg.data.workers_per_gpu = 1
+
+    cfg.test_pipeline[1]['img_scale'] = (img_width, img_height)
+    if img_height != 1024 or img_width != 2048:
+        cfg.test_pipeline[1]['transforms'][0]['keep_ratio'] = False
+    cfg.data.samples_per_gpu = batch_size
+    cfg.data.workers_per_gpu = 1
     dataset = cfg.data[data_type]
     dataset.pipeline = cfg.test_pipeline
     dataset.test_mode = True
@@ -83,9 +87,9 @@ def build_mmseg_dataloader(model_cfg,
     dataset['calib_txt'] = calib_txt
     dataset = build_dataset(dataset)
     data_loader = build_dataloader(dataset,
-                                   samples_per_gpu=1,
+                                   samples_per_gpu=batch_size,
                                    workers_per_gpu=1,
-                                   shuffle=False)
+                                   shuffle=shuffle)
     return data_loader
 
 

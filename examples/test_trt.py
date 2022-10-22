@@ -25,7 +25,9 @@ def main():
     os.makedirs(WORKING_DIRECTORY, exist_ok=True)
     ONNX_MODEL_FILE = osp.join(WORKING_DIRECTORY, 'end2end.onnx')
     TRT_FP32_ENGINE = osp.join(WORKING_DIRECTORY, 'end2end.engine')
+    FP32_JSON_FILE = osp.join(WORKING_DIRECTORY, 'eval_fp32.json')
     TRT_INT8_ENGINE = osp.join(WORKING_DIRECTORY, 'end2end-int8.engine')
+    INT8_JSON_FILE = osp.join(WORKING_DIRECTORY, 'eval_int8.json')
     DEPLOY_CFG_PATH = osp.join(config.mmdeploy_dir, config.model.deploy_cfg)
     DEPLOY_CFG_INT8_PATH = osp.join(config.mmdeploy_dir,
                                     config.model.deploy_cfg_int8)
@@ -50,12 +52,14 @@ def main():
         # test trt fp32
         cmd_lines = [
             'python',
-            osp.join(MMDEPLOY_DIR,
-                     'tools/test.py'), DEPLOY_CFG_PATH, MODEL_CFG_PATH,
-            '--device cuda:0', f'--model {TRT_FP32_ENGINE}', '--metrics mIoU'
+            osp.join(MMDEPLOY_DIR, 'tools/test.py'), DEPLOY_CFG_PATH,
+            MODEL_CFG_PATH, '--device cuda:0', f'--model {TRT_FP32_ENGINE}',
+            '--metrics mIoU', f'--json-file {FP32_JSON_FILE}'
         ]
         log_path = osp.join(WORKING_DIRECTORY, 'test_trt_fp32.log')
-        run_cmd(cmd_lines, log_path)
+        ret_code = run_cmd(cmd_lines, log_path)
+        if ret_code == 0:
+            os.system(f'cat {FP32_JSON_FILE}')
 
     if not osp.exists(TRT_INT8_ENGINE) or config.pipeline.test_trt_int8:
         # test trt int8 of original trt
@@ -81,12 +85,14 @@ def main():
 
         cmd_lines = [
             'python',
-            osp.join(MMDEPLOY_DIR,
-                     'tools/test.py'), DEPLOY_CFG_INT8_PATH, MODEL_CFG_PATH,
-            '--device cuda:0', f'--model {TRT_INT8_ENGINE}', '--metrics mIoU'
+            osp.join(MMDEPLOY_DIR, 'tools/test.py'), DEPLOY_CFG_INT8_PATH,
+            MODEL_CFG_PATH, '--device cuda:0', f'--model {TRT_INT8_ENGINE}',
+            '--metrics mIoU', f'--json-file {INT8_JSON_FILE}'
         ]
         log_path = osp.join(WORKING_DIRECTORY, 'test_trt_int8.log')
-        run_cmd(cmd_lines, log_path)
+        ret_code = run_cmd(cmd_lines, log_path)
+        if ret_code == 0:
+            os.system(f'cat {INT8_JSON_FILE}')
     print('all done for test trt')
 
 

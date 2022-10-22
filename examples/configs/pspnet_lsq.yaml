@@ -7,6 +7,7 @@ quant_settings:
   lsq_optimization_setting.collecting_device: cpu             # 缓存数据放在那，cuda 就是放在gpu，如果显存超了你就换成 'cpu'
 
 calib:
+  name: lsq
   target_platform: TargetPlatform.TRT_INT8
   batch_size: 1
   input_height: 1024
@@ -29,5 +30,5 @@ model:
   deploy_cfg_int8: configs/mmseg/segmentation_tensorrt-int8_static-1024x2048.py
   model_cfg: configs/pspnet/pspnet_r50-d8_512x1024_40k_cityscapes.py
   checkpoint: ../mmdeploy_checkpoints/mmseg/pspnet/pspnet_r50-d8_512x1024_40k_cityscapes_20200605_003338-2966598c.pth
-  working_dir: ../work-dir/pspnet/pspnet_r50-d8_512x1024_40k_cityscapes/lsq
-  onnx_file: ../work-dir/pspnet/pspnet_r50-d8_512x1024_40k_cityscapes/end2end.onnx
+  working_dir: ../work-dir/pspnet/pspnet_r50-d8_512x1024_40k_cityscapes
+  onnx_file: end2end.onnx
