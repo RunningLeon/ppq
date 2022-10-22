@@ -26,8 +26,7 @@ def main():
     ONNX_MODEL_FILE = osp.join(WORKING_DIRECTORY, 'end2end.onnx')
     TRT_FP32_ENGINE = osp.join(WORKING_DIRECTORY, 'end2end.engine')
     FP32_JSON_FILE = osp.join(WORKING_DIRECTORY, 'eval_fp32.json')
-    TRT_INT8_ENGINE = osp.join(WORKING_DIRECTORY, 'end2end-int8.engine')
-    INT8_JSON_FILE = osp.join(WORKING_DIRECTORY, 'eval_int8.json')
+
     DEPLOY_CFG_PATH = osp.join(config.mmdeploy_dir, config.model.deploy_cfg)
     DEPLOY_CFG_INT8_PATH = osp.join(config.mmdeploy_dir,
                                     config.model.deploy_cfg_int8)
@@ -61,38 +60,46 @@ def main():
         if ret_code == 0:
             os.system(f'cat {FP32_JSON_FILE}')
 
-    if not osp.exists(TRT_INT8_ENGINE) or config.pipeline.test_trt_int8:
-        # test trt int8 of original trt
-        print('test original trt int8')
-        # create calib file
-        h5_calibe_file = config.calib.calibration_h5file
-        if not osp.exists(h5_calibe_file):
-            data_dir, _ = osp.split(h5_calibe_file)
-            os.makedirs(data_dir, exist_ok=True)
-            calib_dataloader = build_mmseg_dataloader(
-                MODEL_CFG_PATH, 'train', config.calib.calibration_file)
-            create_calib_input_data(h5_calibe_file, calib_dataloader)
+    if config.pipeline.test_trt_int8.test_flag:
+        for num_quant in config.pipeline.test_trt_int8.num_quant:
+            output_dir = osp.join(WORKING_DIRECTORY,
+                                  f'tensort-int8-quant{num_quant}')
+            os.makedirs(output_dir, exist_ok=True)
+            TRT_INT8_ENGINE = osp.join(output_dir, 'end2end-int8.engine')
+            INT8_JSON_FILE = osp.join(output_dir, 'eval_int8.json')
+            # test trt int8 of original trt
+            print('test original trt int8')
+            # create calib file
+            h5_calibe_file = config.calib.calibration_h5file.format(num_quant)
+            calibration_file = config.calib.calibration_file.format(num_quant)
+            if not osp.exists(h5_calibe_file):
+                data_dir, _ = osp.split(h5_calibe_file)
+                os.makedirs(data_dir, exist_ok=True)
+                calib_dataloader = build_mmseg_dataloader(
+                    MODEL_CFG_PATH, 'train', calibration_file)
+                create_calib_input_data(h5_calibe_file, calib_dataloader)
 
-        cmd_lines = [
-            'python',
-            osp.join(MMDEPLOY_DIR, 'tools/onnx2tensorrt.py'),
-            DEPLOY_CFG_INT8_PATH, ONNX_MODEL_FILE,
-            osp.splitext(TRT_INT8_ENGINE)[0], f'--calib-file {h5_calibe_file}'
-        ]
-        log_path = osp.join(WORKING_DIRECTORY,
-                            'original_onnx2tensorrt-int8.log')
-        run_cmd(cmd_lines, log_path)
+            cmd_lines = [
+                'python',
+                osp.join(MMDEPLOY_DIR, 'tools/onnx2tensorrt.py'),
+                DEPLOY_CFG_INT8_PATH, ONNX_MODEL_FILE,
+                osp.splitext(TRT_INT8_ENGINE)[0],
+                f'--calib-file {h5_calibe_file}'
+            ]
+            log_path = osp.join(output_dir, 'original_onnx2tensorrt-int8.log')
+            run_cmd(cmd_lines, log_path)
 
-        cmd_lines = [
-            'python',
-            osp.join(MMDEPLOY_DIR, 'tools/test.py'), DEPLOY_CFG_INT8_PATH,
-            MODEL_CFG_PATH, '--device cuda:0', f'--model {TRT_INT8_ENGINE}',
-            '--metrics mIoU', f'--json-file {INT8_JSON_FILE}'
-        ]
-        log_path = osp.join(WORKING_DIRECTORY, 'test_trt_int8.log')
-        ret_code = run_cmd(cmd_lines, log_path)
-        if ret_code == 0:
-            os.system(f'cat {INT8_JSON_FILE}')
+            cmd_lines = [
+                'python',
+                osp.join(MMDEPLOY_DIR, 'tools/test.py'), DEPLOY_CFG_INT8_PATH,
+                MODEL_CFG_PATH, '--device cuda:0',
+                f'--model {TRT_INT8_ENGINE}', '--metrics mIoU',
+                f'--json-file {INT8_JSON_FILE}'
+            ]
+            log_path = osp.join(output_dir, 'test_trt_int8.log')
+            ret_code = run_cmd(cmd_lines, log_path)
+            if ret_code == 0:
+                os.system(f'cat {INT8_JSON_FILE}')
     print('all done for test trt')
 
 

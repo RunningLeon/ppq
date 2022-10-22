@@ -36,8 +36,9 @@ calib:
   input_width: 2048
   device: cuda
   calib_steps: 32
-  calibration_file: examples/data/Quant128FromTrainImages.txt
-  calibration_h5file: examples/data/h5file/Quant128FromTrainImages.hdf5
+  num_quant: 128
+  calibration_file: "examples/data/Quant{}FromTrainImages.txt"
+  calibration_h5file: "examples/data/h5file/Quant{}FromTrainImages.hdf5"
   analysis:
     test_executor: False
     graphwise: True

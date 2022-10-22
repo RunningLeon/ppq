@@ -57,8 +57,10 @@ def main():
     print(TargetPlatform)
     TARGET_PLATFORM = eval(config.calib.target_platform)
     collate_fn = lambda x: x.to(config.calib.device)  # noqa: E731
+    calibration_file = config.calib.calibration_file.format(
+        config.calib.num_quant)
     calib_dataloader = build_mmseg_dataloader(MODEL_CFG_PATH, 'train',
-                                              config.calib.calibration_file)
+                                              calibration_file)
 
     with ENABLE_CUDA_KERNEL():
         graph = load_onnx_graph(onnx_import_file=ONNX_MODEL_FILE)

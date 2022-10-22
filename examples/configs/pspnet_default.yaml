@@ -12,8 +12,9 @@ calib:
   input_width: 2048
   device: cuda
   calib_steps: 32
-  calibration_file: examples/data/Quant128FromTrainImages.txt
-  calibration_h5file: examples/data/h5file/Quant128FromTrainImages.hdf5
+  num_quant: 128
+  calibration_file: "examples/data/Quant{}FromTrainImages.txt"
+  calibration_h5file: "examples/data/h5file/Quant{}FromTrainImages.hdf5"
   analysis:
     test_executor: False
     graphwise: True
@@ -34,4 +35,6 @@ model:
 pipeline:
   torch2onnx: False
   test_trt_fp32: False
-  test_trt_int8: True
+  test_trt_int8:
+    test_flag: True
+    num_quant: [32, 64, 128, 256, 512]
