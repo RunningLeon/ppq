@@ -3,6 +3,8 @@ mmseg_dir: ../mmsegmentation
 
 quant_settings:
   dispatcher: pursus
+  dispatching_table.dispatchings:
+    OP_Name: TargetPlatform.FP32
 
 calib:
   name: default

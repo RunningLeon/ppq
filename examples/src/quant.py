@@ -1,11 +1,11 @@
 import logging
 from pprint import pprint
 
-from ppq.api.setting import QuantizationSettingFactory
+from ppq.api.setting import *  # noqa: F401,F403, F405
 
 
 def parse_quantization_config(config):
-    QS = QuantizationSettingFactory.default_setting()
+    QS = QuantizationSettingFactory.default_setting()  # noqa: F405
     for k, v in config.items():
         try:
             value = eval(f'QS.{k}')
