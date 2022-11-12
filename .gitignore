@@ -3,6 +3,7 @@
 **/*.onnx
 **/*.out
 **/*.csv
+**/*.xlsx
 **/*.model
 **/*.hdf5
 
@@ -12,3 +13,5 @@ __pycache__/
 /ppq.egg-info
 /data
 .idea/
+eval-images/
+checkpoints/
