@@ -21,6 +21,7 @@ def parse_args():
 def main():
     args = parse_args()
     print(args)
+    use_keys = ['mIoU', 'aAcc', 'mAcc']
     data = defaultdict(list)
     for pair in args.files:
         type, file_path = pair.strip().split(':')
@@ -30,14 +31,15 @@ def main():
         data['type'].append(type)
         with open(file_path, 'r') as f:
             content = json.load(f)
-            for k, v in content.items():
+            for k in use_keys:
+                v = content[k]
                 data[k].append(v)
     df = pd.DataFrame(data)
     output_dir, _ = osp.split(args.output)
     if output_dir:
         os.makedirs(output_dir, exist_ok=True)
     df.to_excel(args.output)
-    print(df.T)
+    print(df)
     print(f'Saved to {args.output}')
 
 
