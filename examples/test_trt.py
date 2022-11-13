@@ -21,11 +21,12 @@ def main():
         config = yaml.load(f, Loader=yaml.FullLoader)
         config = edict(config)
     models = config.models
-    nrof_model = len(models)
     MMDEPLOY_DIR = config.mmdeploy_dir
 
     if args.model is not None:
         models = [m for m in models if m.name in args.model]
+
+    nrof_model = len(models)
     for idx, model in enumerate(models):
         print(f'Processing {idx}/{nrof_model}\n'
               f'model={model.name}\nconfig={model.model_cfg}')

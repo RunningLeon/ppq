@@ -22,6 +22,7 @@ from ppq.quantization.analyse import (graphwise_error_analyse,
 def parse_args():
     parser = argparse.ArgumentParser(description='test int8')
     parser.add_argument('config', help='yaml config')
+    parser.add_argument('--model', default='pspnet')
     args = parser.parse_args()
     return args
 
@@ -31,12 +32,16 @@ def main():
     with open(args.config, 'r') as f:
         config = yaml.load(f, Loader=yaml.FullLoader)
         config = edict(config)
+    model_names = [m.name for m in config.models]
+    assert args.model in model_names, \
+        f'{args.model} not exists in config {args.config}'
+    MMDEPLOY_DIR = config.mmdeploy_dir
+    model = [m for m in config.models if m.name == args.model][0]
     QS = parse_quantization_config(config.quant_settings)
     print_quant_settings(QS)
-    ONNX_MODEL_FILE = osp.join(config.model.working_dir,
-                               config.model.onnx_file)
+    ONNX_MODEL_FILE = osp.join(config.workdir, model.name, 'end2end.onnx')
     assert osp.exists(ONNX_MODEL_FILE), ONNX_MODEL_FILE
-    WORKING_DIRECTORY = osp.join(config.model.working_dir, config.calib.name)
+    WORKING_DIRECTORY = osp.join(config.workdir, model.name, config.calib.name)
     os.makedirs(WORKING_DIRECTORY, exist_ok=True)
     shutil.copy(args.config,
                 osp.join(WORKING_DIRECTORY,
@@ -46,9 +51,8 @@ def main():
                                         'ppq-int8-config.json')
     PPQ_TRT_INT8_FILE = os.path.join(WORKING_DIRECTORY, 'ppq-int8.engine')
 
-    DEPLOY_CFG_INT8_PATH = osp.join(config.mmdeploy_dir,
-                                    config.model.deploy_cfg_int8)
-    MODEL_CFG_PATH = osp.join(config.mmseg_dir, config.model.model_cfg)
+    DEPLOY_CFG_INT8_PATH = config.deploy.trt_int8
+    MODEL_CFG_PATH = model.model_cfg
 
     NETWORK_INPUTSHAPE = [
         config.calib.batch_size, 3, config.calib.input_height,
@@ -59,8 +63,13 @@ def main():
     collate_fn = lambda x: x.to(config.calib.device)  # noqa: E731
     calibration_file = config.calib.calibration_file.format(
         config.calib.num_quant)
-    calib_dataloader = build_mmseg_dataloader(MODEL_CFG_PATH, 'train',
-                                              calibration_file)
+    calib_dataloader = build_mmseg_dataloader(
+        MODEL_CFG_PATH,
+        'train',
+        calibration_file,
+        batch_size=config.calib.batch_size,
+        img_height=config.calib.input_height,
+        img_width=config.calib.input_width)
 
     with ENABLE_CUDA_KERNEL():
         graph = load_onnx_graph(onnx_import_file=ONNX_MODEL_FILE)
@@ -143,9 +152,11 @@ def main():
                          config_save_to=PPQ_ONNX_INT8_CONFIG)
 
     torch.cuda.empty_cache()
+
+    # onnx2trt onnx+qdq
     cmd_lines = [
         'python',
-        osp.join(config.mmdeploy_dir, 'tools/onnx2tensorrt.py'),
+        osp.join(MMDEPLOY_DIR, 'tools/onnx2tensorrt.py'),
         DEPLOY_CFG_INT8_PATH,
         PPQ_ONNX_INT8_FILE,
         osp.splitext(PPQ_TRT_INT8_FILE)[0],
@@ -153,17 +164,69 @@ def main():
     log_path = osp.join(WORKING_DIRECTORY, 'ppq_onnx2tensorrt.log')
     run_cmd(cmd_lines, log_path)
 
-    eval_json_file = osp.join(WORKING_DIRECTORY, 'eval.json')
+    # onnx2trt dynamic range mode
+    trt_dynamic_range_engine = osp.join(WORKING_DIRECTORY,
+                                        'dynamic_range.engine')
+    log_path = osp.join(WORKING_DIRECTORY,
+                        'ppq_onnx2tensorrt_dynamic_range.log')
     cmd_lines = [
-        'python',
-        osp.join(config.mmdeploy_dir, 'tools/test.py'), DEPLOY_CFG_INT8_PATH,
-        MODEL_CFG_PATH, '--device cuda:0', f'--model {PPQ_TRT_INT8_FILE}',
-        '--metrics mIoU', f'--json-file {eval_json_file}'
+        'python', 'ppq/utils/write_qparams_onnx2trt.py',
+        f'--onnx {ONNX_MODEL_FILE}', f'--qparam_json {PPQ_ONNX_INT8_CONFIG}',
+        f'--engine {trt_dynamic_range_engine}'
     ]
-    log_path = osp.join(WORKING_DIRECTORY, 'test_ppq_trt_int8.log')
-    ret_code = run_cmd(cmd_lines, log_path)
-    if ret_code == 0:
-        os.system(f'cat {eval_json_file}')
+    run_cmd(cmd_lines, log_path)
+    if osp.exists(PPQ_TRT_INT8_FILE):
+        # eval
+        eval_json_file = osp.join(WORKING_DIRECTORY, 'eval.json')
+        cmd_lines = [
+            'python',
+            osp.join(MMDEPLOY_DIR, 'tools/test.py'), DEPLOY_CFG_INT8_PATH,
+            MODEL_CFG_PATH, '--device cuda:0', f'--model {PPQ_TRT_INT8_FILE}',
+            '--metrics mIoU', f'--json-file {eval_json_file}'
+        ]
+        log_path = osp.join(WORKING_DIRECTORY, 'test_ppq_trt_int8.log')
+        ret_code = run_cmd(cmd_lines, log_path)
+        if ret_code == 0:
+            os.system(f'cat {eval_json_file}')
+        # speed
+        cmd_lines = [
+            'python',
+            osp.join(MMDEPLOY_DIR, 'tools/profiler.py'),
+            DEPLOY_CFG_INT8_PATH,
+            MODEL_CFG_PATH,
+            config.deploy.eval_img_dir,
+            '--device cuda:0',
+            f'--model {PPQ_TRT_INT8_FILE}',
+        ]
+        log_path = osp.join(WORKING_DIRECTORY, 'speed_int8.log')
+        ret_code = run_cmd(cmd_lines, log_path)
+
+    if osp.exists(trt_dynamic_range_engine):
+        eval_json_file = osp.join(WORKING_DIRECTORY, 'eval_dynamic_range.json')
+        cmd_lines = [
+            'python',
+            osp.join(MMDEPLOY_DIR,
+                     'tools/test.py'), DEPLOY_CFG_INT8_PATH, MODEL_CFG_PATH,
+            '--device cuda:0', f'--model {trt_dynamic_range_engine}',
+            '--metrics mIoU', f'--json-file {eval_json_file}'
+        ]
+        log_path = osp.join(WORKING_DIRECTORY, 'test_ppq_trt_int8.log')
+        ret_code = run_cmd(cmd_lines, log_path)
+        if ret_code == 0:
+            os.system(f'cat {eval_json_file}')
+        # speed
+        cmd_lines = [
+            'python',
+            osp.join(MMDEPLOY_DIR, 'tools/profiler.py'),
+            DEPLOY_CFG_INT8_PATH,
+            MODEL_CFG_PATH,
+            config.deploy.eval_img_dir,
+            '--device cuda:0',
+            f'--model {trt_dynamic_range_engine}',
+        ]
+        log_path = osp.join(WORKING_DIRECTORY, 'speed_int8_dyanmic_range.log')
+        ret_code = run_cmd(cmd_lines, log_path)
+
     logging.info(f'Saved results to {WORKING_DIRECTORY}')
 
 
