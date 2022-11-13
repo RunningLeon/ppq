@@ -39,9 +39,10 @@ def main():
     model = [m for m in config.models if m.name == args.model][0]
     QS = parse_quantization_config(config.quant_settings)
     print_quant_settings(QS)
-    ONNX_MODEL_FILE = osp.join(config.workdir, model.name, 'end2end.onnx')
+    ONNX_MODEL_FILE = osp.join(config.workspace, model.name, 'end2end.onnx')
     assert osp.exists(ONNX_MODEL_FILE), ONNX_MODEL_FILE
-    WORKING_DIRECTORY = osp.join(config.workdir, model.name, config.calib.name)
+    WORKING_DIRECTORY = osp.join(config.workspace, model.name,
+                                 config.calib.name)
     os.makedirs(WORKING_DIRECTORY, exist_ok=True)
     shutil.copy(args.config,
                 osp.join(WORKING_DIRECTORY,
