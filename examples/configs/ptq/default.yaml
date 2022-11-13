@@ -12,13 +12,13 @@ calib:
   input_height: 1024
   input_width: 2048
   device: cuda
-  calib_steps: 32
+  calib_steps: 128 # valid when >= num_quant
   num_quant: 128
   calibration_file: "examples/data/Quant{}FromTrainImages.txt"
   calibration_h5file: "examples/data/h5file/Quant{}FromTrainImages.hdf5"
   analysis:
     test_executor: False
-    graphwise: True
+    graphwise: False
     layerwise: False
     parameter: False
     variable: False
