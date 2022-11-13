@@ -168,14 +168,17 @@ def main():
     # onnx2trt dynamic range mode
     trt_dynamic_range_engine = osp.join(WORKING_DIRECTORY,
                                         'dynamic_range.engine')
-    log_path = osp.join(WORKING_DIRECTORY,
-                        'ppq_onnx2tensorrt_dynamic_range.log')
-    cmd_lines = [
-        'python', 'ppq/utils/write_qparams_onnx2trt.py',
-        f'--onnx {ONNX_MODEL_FILE}', f'--qparam_json {PPQ_ONNX_INT8_CONFIG}',
-        f'--engine {trt_dynamic_range_engine}'
-    ]
-    run_cmd(cmd_lines, log_path)
+    if osp.exists(PPQ_ONNX_INT8_CONFIG):
+        log_path = osp.join(WORKING_DIRECTORY,
+                            'ppq_onnx2tensorrt_dynamic_range.log')
+        cmd_lines = [
+            'python', 'ppq/utils/write_qparams_onnx2trt.py',
+            f'--onnx {ONNX_MODEL_FILE}',
+            f'--qparam_json {PPQ_ONNX_INT8_CONFIG}',
+            f'--engine {trt_dynamic_range_engine}'
+        ]
+        run_cmd(cmd_lines, log_path)
+
     if osp.exists(PPQ_TRT_INT8_FILE):
         # eval
         eval_json_file = osp.join(WORKING_DIRECTORY, 'eval.json')
