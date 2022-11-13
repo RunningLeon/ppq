@@ -1,0 +1,62 @@
+mmdeploy_dir: ../mmdeploy
+mmseg_dir: ../mmsegmentation
+workspace: ../workdir
+
+quant_settings:
+  dispatcher: pursus
+
+calib:
+  name: default
+  target_platform: TargetPlatform.TRT_INT8
+  batch_size: 1
+  input_height: 1024
+  input_width: 2048
+  device: cuda
+  calib_steps: 128 # valid when >= num_quant
+  num_quant: 128
+  calibration_file: "examples/data/Quant{}FromTrainImages.txt"
+  calibration_h5file: "examples/data/h5file/Quant{}FromTrainImages.hdf5"
+  analysis:
+    test_executor: False
+    graphwise: False
+    layerwise: False
+    parameter: False
+    variable: False
+#    interested_outputs:
+#      -
+deploy:
+  trt_fp32: examples/configs/deploy/trt-fp32.py
+  trt_fp16: examples/configs/deploy/trt-fp16.py
+  trt_int8: examples/configs/deploy/trt-int8.py
+  image: examples/resources/demo.png
+  eval_img_dir: examples/eval-images
+
+models:
+  - name: fcn
+    model_cfg: examples/configs/model/fcn_r50-d8_512x1024_80k_cityscapes.py
+    checkpoint: examples/checkpoints/fcn_r50-d8_512x1024_80k_cityscapes_20200606_113019-03aa804d.pth
+  - name: pspnet
+    model_cfg: examples/configs/model/pspnet_r50-d8_512x1024_80k_cityscapes.py
+    checkpoint: examples/checkpoints/pspnet_r50-d8_512x1024_80k_cityscapes_20200606_112131-2376f12b.pth
+  - name: bisenetv2
+    model_cfg: examples/configs/model/bisenetv2_fcn_4x4_1024x1024_160k_cityscapes.py
+    checkpoint: examples/checkpoints/bisenetv2_fcn_4x4_1024x1024_160k_cityscapes_20210902_015551-bcf10f09.pth
+  - name: stdc
+    model_cfg: examples/configs/model/stdc2_in1k-pre_512x1024_80k_cityscapes.py
+    checkpoint: examples/checkpoints/stdc2_in1k-pre_512x1024_80k_cityscapes_20220224_073048-1f8f0f6c.pth
+
+pipeline:
+  torch2onnx: True
+  trt_fp32:
+    convert: True
+    eval: True
+    speed: True
+  trt_fp16:
+    convert: True
+    eval: True
+    speed: True
+  trt_int8:
+    convert: True
+    eval: True
+    speed: True
+    num_quant: [128]
