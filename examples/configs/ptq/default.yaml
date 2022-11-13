@@ -19,7 +19,7 @@ calib:
   analysis:
     test_executor: False
     graphwise: True
-    layerwise: True
+    layerwise: False
     parameter: False
     variable: False
 #    interested_outputs:

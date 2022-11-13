@@ -149,8 +149,13 @@ def main():
         print('网络量化结束，正在生成目标文件:')
         export_ppq_graph(graph=quantized,
                          platform=TARGET_PLATFORM,
-                         graph_save_to=PPQ_ONNX_INT8_FILE,
-                         config_save_to=PPQ_ONNX_INT8_CONFIG)
+                         graph_save_to=PPQ_ONNX_INT8_FILE)
+        from ppq.parser.trt_exporter import TensorrtExporter
+        exporter = TensorrtExporter()
+        exporter.export(file_path=PPQ_ONNX_INT8_FILE.replace(
+            '.onnx', '-trt.onnx'),
+                        graph=quantized,
+                        config_path=PPQ_ONNX_INT8_CONFIG)
 
     torch.cuda.empty_cache()
 
