@@ -1,18 +1,18 @@
 from typing import Union
 
 import torch
-from ppq.IR import Operation
-from ppq.core import (PASSIVE_OPERATIONS,ChannelwiseTensorQuantizationConfig,
+from ppq.core import (ChannelwiseTensorQuantizationConfig,
                       OperationQuantizationConfig, QuantizationPolicy,
                       QuantizationProperty, QuantizationStates, RoundingPolicy,
                       TargetPlatform)
-from ppq.IR import BaseGraph, GraphCommandProcessor
+from ppq.IR import BaseGraph, Operation
+
 from .base import BaseQuantizer
 
 
 class TensorRTQuantizer(BaseQuantizer):
     def __init__(
-        self, graph: Union[BaseGraph, GraphCommandProcessor]
+        self, graph: BaseGraph
     ) -> Union[torch.Tensor, list, dict]:
         super().__init__(graph=graph)
         self._num_of_bits = 8
@@ -29,7 +29,7 @@ class TensorRTQuantizer(BaseQuantizer):
         )
 
         if operation.type in {'Conv', 'ConvTranspose', 'Gemm', 'MatMul'}:
-            # base_quant_config.output_quantization_config[0].state = QuantizationStates.FP32
+            base_quant_config.output_quantization_config[0].state = QuantizationStates.FP32
             # set all parameters within Conv, ConvTranspose, Gemm to per-channel quant-config.
             assert operation.num_of_input > 0, 'Seems you got a Conv layer with no parameters.'
 
@@ -65,28 +65,10 @@ class TensorRTQuantizer(BaseQuantizer):
                             offset = None, scale  = None, channel_axis = 0
                         )
                     base_quant_config.input_quantization_config[1].observer_algorithm = 'Minmax'
-
+            # if operation has bias
             if operation.num_of_input > 2:
                 bias_config = base_quant_config.input_quantization_config[-1]
-                bias_config.policy = QuantizationPolicy(
-                    QuantizationProperty.SYMMETRICAL +
-                    QuantizationProperty.LINEAR +
-                    QuantizationProperty.PER_CHANNEL
-                )
-                bias_config.num_of_bits = 32
-                bias_config.quant_max = int(pow(2, bias_config.num_of_bits - 1)) - 1
-                bias_config.quant_min = - int(pow(2, bias_config.num_of_bits - 1)) + 1
-                bias_config.state = QuantizationStates.PASSIVE_INIT
-                base_quant_config.input_quantization_config[-1] = \
-                    ChannelwiseTensorQuantizationConfig.convert_from_tensor_config(
-                        convert_from = bias_config, offset = None,
-                        scale = None, channel_axis = 0
-                    )
-                base_quant_config.input_quantization_config[-1].observer_algorithm = 'Minmax'
-
-        if operation.type in PASSIVE_OPERATIONS:
-            # Those op are not active op.
-            base_quant_config.is_active_quant_op = False
+                bias_config.state = QuantizationStates.FP32
         return base_quant_config
 
     @ property
@@ -100,13 +82,8 @@ class TensorRTQuantizer(BaseQuantizer):
     @ property
     def quant_operation_types(self) -> set:
         return {
-            'Conv', 'ConvTranspose', 'Gemm', 'Relu', 'PRelu',
-            'Clip', 'Pad', 'Resize', 'MaxPool', 'AveragePool',
-            'GlobalMaxPool', 'GlobalAveragePool', 'Softmax',
-            'Mul', 'Add', 'Max', 'Sub', 'Div', 'Reshape',
-            'LeakyRelu', 'Concat', 'Sigmoid', 'Interp',
-            'ReduceMean', 'Transpose', 'Slice', 'Flatten'
-        }
+            'Conv', 'Gemm', 'ConvTranspose', 'MatMul',
+            'AveragePool', 'GlobalAveragePool'}
 
     @ property
     def quantize_policy(self) -> QuantizationPolicy:
