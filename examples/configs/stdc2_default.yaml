@@ -37,4 +37,4 @@ pipeline:
   test_trt_fp32: False
   test_trt_int8:
     test_flag: True
-    num_quant: [32, 64, 128, 256, 512]
+    num_quant: [128]

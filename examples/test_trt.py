@@ -83,7 +83,7 @@ def main():
             if ret_code == 0:
                 os.system(f'cat {log_path}')
 
-        if not osp.exists(TRT_FP16_ENGINE) or config.pipeline.trt_fp16.convert:
+        if config.pipeline.trt_fp16.convert:
             cmd_lines = [
                 'python',
                 osp.join(MMDEPLOY_DIR, 'tools/onnx2tensorrt.py'),
