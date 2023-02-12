@@ -30,6 +30,8 @@ def main():
     for idx, model in enumerate(models):
         print(f'Processing {idx}/{nrof_model}\n'
               f'model={model.name}\nconfig={model.model_cfg}')
+        model.model_cfg = osp.join(config.mmseg_dir, model.model_cfg)
+        assert osp.exists(model.model_cfg)
         print(25 * '--')
         output_dir = osp.join(config.workspace, model.name)
         engine_dir = osp.join(output_dir, 'trt')
