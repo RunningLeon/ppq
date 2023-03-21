@@ -167,11 +167,10 @@ def main():
         cmd_lines = [
             'trtexec',
             f'--onnx={PPQ_ONNX_INT8_FILE}',
-            f'--saveEngine={osp.splitext(PPQ_TRT_INT8_FILE)[0] + ".engine"}',
+            f'--saveEngine={PPQ_TRT_INT8_FILE}',
             f'--int8',
             f'--fp16',
-            '--workspace=2048',
-            '--precisionConstraints=obey'
+            '--workspace=2048'
         ]
     else:
         cmd_lines = [
