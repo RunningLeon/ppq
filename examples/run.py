@@ -23,6 +23,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description='test int8')
     parser.add_argument('config', help='yaml config')
     parser.add_argument('--model', default='pspnet')
+    parser.add_argument('--trtexec', action='store_true')
     args = parser.parse_args()
     return args
 
@@ -53,7 +54,7 @@ def main():
     PPQ_TRT_INT8_FILE = os.path.join(WORKING_DIRECTORY, 'ppq-int8.engine')
 
     DEPLOY_CFG_INT8_PATH = config.deploy.trt_int8
-    MODEL_CFG_PATH = model.model_cfg
+    MODEL_CFG_PATH = os.path.join(config.mmseg_dir, model.model_cfg)
 
     NETWORK_INPUTSHAPE = [
         config.calib.batch_size, 3, config.calib.input_height,
@@ -162,13 +163,25 @@ def main():
     torch.cuda.empty_cache()
 
     # onnx2trt onnx+qdq
-    cmd_lines = [
-        'python',
-        osp.join(MMDEPLOY_DIR, 'tools/onnx2tensorrt.py'),
-        DEPLOY_CFG_INT8_PATH,
-        PPQ_ONNX_INT8_FILE,
-        osp.splitext(PPQ_TRT_INT8_FILE)[0],
-    ]
+    if args.trtexec:
+        cmd_lines = [
+            'trtexec',
+            f'--onnx={PPQ_ONNX_INT8_FILE}',
+            f'--saveEngine={osp.splitext(PPQ_TRT_INT8_FILE)[0] + ".engine"}',
+            f'--int8',
+            f'--fp16',
+            '--workspace=2048',
+            '--precisionConstraints=obey'
+        ]
+    else:
+        cmd_lines = [
+            'python',
+            osp.join(MMDEPLOY_DIR, 'tools/onnx2tensorrt.py'),
+            DEPLOY_CFG_INT8_PATH,
+            PPQ_ONNX_INT8_FILE,
+            osp.splitext(PPQ_TRT_INT8_FILE)[0],
+        ]
+
     log_path = osp.join(WORKING_DIRECTORY, 'ppq_onnx2tensorrt.log')
     run_cmd(cmd_lines, log_path)
 
