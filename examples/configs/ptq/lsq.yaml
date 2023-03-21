@@ -39,18 +39,42 @@ deploy:
   eval_img_dir: examples/eval-images
 
 models:
-  - name: fcn
-    model_cfg: examples/configs/model/fcn_r50-d8_512x1024_80k_cityscapes.py
-    checkpoint: examples/checkpoints/fcn_r50-d8_512x1024_80k_cityscapes_20200606_113019-03aa804d.pth
-  - name: pspnet
-    model_cfg: examples/configs/model/pspnet_r50-d8_512x1024_80k_cityscapes.py
-    checkpoint: examples/checkpoints/pspnet_r50-d8_512x1024_80k_cityscapes_20200606_112131-2376f12b.pth
+  - name: deeplabv3plus_r101
+    model_cfg: configs/deeplabv3plus/deeplabv3plus_r101-d8_512x1024_80k_cityscapes.py
+    checkpoint: https://download.openmmlab.com/mmsegmentation/v0.5/deeplabv3plus/deeplabv3plus_r101-d8_512x1024_80k_cityscapes/deeplabv3plus_r101-d8_512x1024_80k_cityscapes_20200606_114143-068fcfe9.pth
+  - name: deeplabv3plus_r50
+    model_cfg: configs/deeplabv3plus/deeplabv3plus_r50-d8_512x1024_80k_cityscapes.py
+    checkpoint: https://download.openmmlab.com/mmsegmentation/v0.5/deeplabv3plus/deeplabv3plus_r50-d8_512x1024_80k_cityscapes/deeplabv3plus_r50-d8_512x1024_80k_cityscapes_20200606_114049-f9fb496d.pth
+  - name: deeplabv3plus_r18
+    model_cfg: configs/deeplabv3plus/deeplabv3plus_r18-d8_512x1024_80k_cityscapes.py
+    checkpoint: https://download.openmmlab.com/mmsegmentation/v0.5/deeplabv3plus/deeplabv3plus_r18-d8_512x1024_80k_cityscapes/deeplabv3plus_r18-d8_512x1024_80k_cityscapes_20201226_080942-cff257fe.pth
+  - name: deeplabv3plus_mobilenet_v2
+    model_cfg: configs/mobilenet_v2/deeplabv3plus_m-v2-d8_512x1024_80k_cityscapes.py
+    checkpoint: https://download.openmmlab.com/mmsegmentation/v0.5/mobilenet_v2/deeplabv3plus_m-v2-d8_512x1024_80k_cityscapes/deeplabv3plus_m-v2-d8_512x1024_80k_cityscapes_20200825_124836-d256dd4b.pth
+  - name: stdc1_in1k-pre
+    model_cfg: configs/stdc/stdc1_in1k-pre_512x1024_80k_cityscapes.py
+    checkpoint: https://download.openmmlab.com/mmsegmentation/v0.5/stdc/stdc1_in1k-pre_512x1024_80k_cityscapes/stdc1_in1k-pre_512x1024_80k_cityscapes_20220224_141648-3d4c2981.pth
+  - name: stdc2_in1k-pre
+    model_cfg: configs/stdc/stdc2_512x1024_80k_cityscapes.py
+    checkpoint: https://download.openmmlab.com/mmsegmentation/v0.5/stdc/stdc2_in1k-pre_512x1024_80k_cityscapes/stdc2_in1k-pre_512x1024_80k_cityscapes_20220224_073048-1f8f0f6c.pth
   - name: bisenetv2
-    model_cfg: examples/configs/model/bisenetv2_fcn_4x4_1024x1024_160k_cityscapes.py
-    checkpoint: examples/checkpoints/bisenetv2_fcn_4x4_1024x1024_160k_cityscapes_20210902_015551-bcf10f09.pth
-  - name: stdc
-    model_cfg: examples/configs/model/stdc2_in1k-pre_512x1024_80k_cityscapes.py
-    checkpoint: examples/checkpoints/stdc2_in1k-pre_512x1024_80k_cityscapes_20220224_073048-1f8f0f6c.pth
+    model_cfg: configs/bisenetv2/bisenetv2_fcn_4x8_1024x1024_160k_cityscapes.py
+    checkpoint: https://download.openmmlab.com/mmsegmentation/v0.5/bisenetv2/bisenetv2_fcn_4x8_1024x1024_160k_cityscapes/bisenetv2_fcn_4x8_1024x1024_160k_cityscapes_20210903_000032-e1a2eed6.pth
+  - name: fast_scnn
+    model_cfg: configs/fastscnn/fast_scnn_lr0.12_8x4_160k_cityscapes.py
+    checkpoint: https://download.openmmlab.com/mmsegmentation/v0.5/fast_scnn/fast_scnn_lr0.12_8x4_160k_cityscapes/fast_scnn_lr0.12_8x4_160k_cityscapes_20210630_164853-0cec9937.pth
+#  - name: fcn
+#    model_cfg: examples/configs/model/fcn_r50-d8_512x1024_80k_cityscapes.py
+#    checkpoint: examples/checkpoints/fcn_r50-d8_512x1024_80k_cityscapes_20200606_113019-03aa804d.pth
+#  - name: pspnet
+#    model_cfg: examples/configs/model/pspnet_r50-d8_512x1024_80k_cityscapes.py
+#    checkpoint: examples/checkpoints/pspnet_r50-d8_512x1024_80k_cityscapes_20200606_112131-2376f12b.pth
+#  - name: bisenetv2
+#    model_cfg: examples/configs/model/bisenetv2_fcn_4x4_1024x1024_160k_cityscapes.py
+#    checkpoint: examples/checkpoints/bisenetv2_fcn_4x4_1024x1024_160k_cityscapes_20210902_015551-bcf10f09.pth
+#  - name: stdc
+#    model_cfg: examples/configs/model/stdc2_in1k-pre_512x1024_80k_cityscapes.py
+#    checkpoint: examples/checkpoints/stdc2_in1k-pre_512x1024_80k_cityscapes_20220224_073048-1f8f0f6c.pth
 
 pipeline:
   torch2onnx: True
